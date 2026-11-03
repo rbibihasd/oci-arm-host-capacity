@@ -2,7 +2,6 @@ name: Check and Create Instance
 
 on:
   schedule:
-    # كيتعاود كل 5 دقائق فـ سيرفرات جيت هاب
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
@@ -21,13 +20,18 @@ jobs:
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist
 
+      - name: Write Private Key File
+        run: |
+          echo "${{ secrets.OCI_PRIVATE_KEY_FILENAME }}" > key.pem
+          chmod 600 key.pem
+
       - name: Run Availability Check
         env:
           OCI_REGION: ${{ secrets.OCI_REGION }}
           OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
           OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
           OCI_KEY_FINGERPRINT: ${{ secrets.OCI_KEY_FINGERPRINT }}
-          OCI_PRIVATE_KEY_FILENAME: ${{ secrets.OCI_PRIVATE_KEY_FILENAME }}
+          OCI_PRIVATE_KEY_FILENAME: key.pem
           OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
           OCI_IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
           OCI_OCPUS: ${{ secrets.OCI_OCPUS }}
