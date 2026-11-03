@@ -2,7 +2,7 @@ name: Check and Create Instance
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,26 +12,33 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: openssl, curl
+
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Create Private Key File
+      - name: Create .env and Key
         env:
           RAW_KEY: ${{ secrets.OCI_PRIVATE_KEY_FILENAME }}
         run: |
           printf "%s\n" "$RAW_KEY" > key.pem
           chmod 600 key.pem
+          cat <<EOF > .env
+          OCI_REGION=${{ secrets.OCI_REGION }}
+          OCI_USER_ID=${{ secrets.OCI_USER_ID }}
+          OCI_TENANCY_ID=${{ secrets.OCI_TENANCY_ID }}
+          OCI_KEY_FINGERPRINT=${{ secrets.OCI_KEY_FINGERPRINT }}
+          OCI_PRIVATE_KEY_FILENAME=key.pem
+          OCI_SUBNET_ID=${{ secrets.OCI_SUBNET_ID }}
+          OCI_IMAGE_ID=${{ secrets.OCI_IMAGE_ID }}
+          OCI_OCPUS=${{ secrets.OCI_OCPUS }}
+          OCI_MEMORY_IN_GBS=${{ secrets.OCI_MEMORY_IN_GBS }}
+          OCI_SSH_PUBLIC_KEY="${{ secrets.OCI_SSH_PUBLIC_KEY }}"
+          EOF
 
       - name: Run Availability Check
-        env:
-          OCI_REGION: ${{ secrets.OCI_REGION }}
-          OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
-          OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
-          OCI_KEY_FINGERPRINT: ${{ secrets.OCI_KEY_FINGERPRINT }}
-          OCI_PRIVATE_KEY_FILENAME: key.pem
-          OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
-          OCI_IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
-          OCI_OCPUS: ${{ secrets.OCI_OCPUS }}
-          OCI_MEMORY_IN_GBS: ${{ secrets.OCI_MEMORY_IN_GBS }}
-          OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
-        run: php ./index.php
+        run: php ./index.php || true
