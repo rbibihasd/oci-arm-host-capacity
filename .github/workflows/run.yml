@@ -2,7 +2,7 @@ name: Check and Create Instance
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,12 +11,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: openssl, curl
 
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist
@@ -38,7 +32,14 @@ jobs:
           OCI_OCPUS=${{ secrets.OCI_OCPUS }}
           OCI_MEMORY_IN_GBS=${{ secrets.OCI_MEMORY_IN_GBS }}
           OCI_SSH_PUBLIC_KEY="${{ secrets.OCI_SSH_PUBLIC_KEY }}"
+          TELEGRAM_BOT_API_TOKEN=${{ secrets.TELEGRAM_BOT_API_TOKEN }}
+          TELEGRAM_USER_ID=${{ secrets.TELEGRAM_USER_ID }}
           EOF
 
-      - name: Run Availability Check
-        run: php ./index.php || true
+      - name: Run Availability Check Loop
+        run: |
+          for i in {1..6}; do
+            echo "Attempt $i..."
+            php ./index.php || true
+            sleep 50
+          done
